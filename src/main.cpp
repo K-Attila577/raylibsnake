@@ -2,6 +2,8 @@
 #include "resource_dir.h"
 #include <vector>	
 #include <random>
+#include <string>
+
 struct Point
 {
     int x;
@@ -17,6 +19,14 @@ bool shouldResetKey = false;
 int framesToWaitAfterReset = 5;
 bool isGameOver =  false;
 double lastTime;
+int score = 0;
+std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> distrib(1, 19);
+int foodX;
+int foodY;
+bool isfoodready = false;
+bool grow = false;
 bool timer(float difference)
 {
     double currentTime = GetTime();
@@ -47,12 +57,14 @@ int main ()
 		drawGrid();
         food();
         snake();
-        collision();
+        
         if(!isGameOver)
         {
             movement();
         }
-        DrawFPS(0, 0); 
+        
+        DrawText(std::to_string(score).c_str(),0,0,50,RED);
+        
         if(isGameOver)
         {
             gameover();
@@ -82,6 +94,21 @@ void drawGrid()
 }
 void food()
 {
+    
+
+    while(!isfoodready)
+    {
+        foodX = distrib(gen);
+        foodY = distrib(gen);
+        for(int i = 0; i<snakeBody.size();i++)
+        {
+            if(foodX == snakeBody[i].x && foodY == snakeBody[i].y){isfoodready=false;}
+            else{isfoodready=true;}
+
+        }
+    }
+    DrawRectangle(foodX*gridsize,foodY*gridsize,gridsize,gridsize,RED);
+    
 
 }
 void snake()
@@ -93,6 +120,20 @@ void snake()
 }
 void collision()
 {
+        for(int i = 1; i < snakeBody.size();i++)
+        {
+            if(snakeBody[0].x == snakeBody[i].x && snakeBody[0].y == snakeBody[i].y){isGameOver=true;}
+            
+    
+        }
+        if(snakeBody[0].x == foodX && snakeBody[0].y == foodY)
+        {
+            grow=true;
+        }
+        
+        
+
+        
 }
 
 void gameover()
@@ -108,11 +149,13 @@ void gameover()
         framesToWaitAfterReset = 5;
         isGameOver = false;
     }
+    score = 0;
+    isfoodready=false;
 }
 
 void movement()
 {
-       if (shouldResetKey)
+        if (shouldResetKey)
     {
         if (framesToWaitAfterReset > 0)
         {
@@ -127,8 +170,9 @@ void movement()
     if (IsKeyDown(KEY_LEFT) && lastKey != KEY_RIGHT) lastKey = KEY_LEFT;
     if (IsKeyDown(KEY_DOWN) && lastKey != KEY_UP) lastKey = KEY_DOWN;
     if (IsKeyDown(KEY_UP) && lastKey != KEY_DOWN) lastKey = KEY_UP;
-    if ( timer(0.12f))
+    if ( timer(0.13f))
     {
+        
         Point oldHead = snakeBody[0];
         switch (lastKey)
         {
@@ -156,6 +200,14 @@ void movement()
             Point oldPos = snakeBody[i];
             snakeBody[i] = oldHead;
             oldHead = oldPos;
+            if(grow)
+            {
+                snakeBody.push_back(oldHead);
+                grow= false;
+                isfoodready= false;
+                score++;
+            }
         }
+        collision();
     }
 }
